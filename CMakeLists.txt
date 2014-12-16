@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 project(dirbuster-ng)
 
-SET (CMAKE_C_FLAGS "-g -fPIE")
+SET (CMAKE_C_FLAGS "-pthread")
 
 add_definitions(-DDBNG_PREFIX=\"${CMAKE_INSTALL_PREFIX}\")
 

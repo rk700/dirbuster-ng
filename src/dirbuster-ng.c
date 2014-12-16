@@ -100,8 +100,8 @@ void* dbng_engine(void* queue_arg)
   CURL *curl;
   CURLcode response;
   char *wl;
-  int final_url_len = 0;
-  int wl_len = 0;
+  size_t final_url_len = 0;
+  size_t wl_len = 0;
   long http_code;
 
   curl = curl_easy_init();
@@ -130,20 +130,24 @@ void* dbng_engine(void* queue_arg)
   while(db_queue->head) {
 	  
 	pthread_mutex_lock(db_queue->mutex);
-	wl_len = strlen(db_queue->head->entry)+1;
+    if(!(db_queue->head)) {
+	    pthread_mutex_unlock(db_queue->mutex);
+        break;
+    }
+	wl_len = db_queue->head->entry_len;
     wl = (char*) malloc (wl_len * sizeof(char));
-	setZeroN(wl,wl_len);
-	strncpy(wl,db_queue->head->entry,strlen(db_queue->head->entry));
+	//setZeroN(wl,wl_len);
+	strcpy(wl,db_queue->head->entry);//,strlen(db_queue->head->entry));
     queue_rem(db_queue);
 	pthread_mutex_unlock(db_queue->mutex);
 
     //we construct the url given host and wl
-	final_url_len = strlen(conf0.host) + strlen(wl) +2;
+	final_url_len = strlen(conf0.host) + wl_len +1;
 	url = (char*) malloc(final_url_len * sizeof(char) );
-	setZeroN(url,final_url_len);
-	strncpy(url,conf0.host,strlen(conf0.host));
-	strncat(url,"/",1 * sizeof(char));  
-	strncat(url,wl,strlen(wl));
+	//setZeroN(url,final_url_len);
+	strcpy(url,conf0.host);//,strlen(conf0.host));
+	strcat(url,"/");//,1 * sizeof(char));  
+	strcat(url,wl);//,strlen(wl));
     free(wl);
 	  
     curl_easy_setopt(curl, CURLOPT_URL,url);
@@ -151,10 +155,10 @@ void* dbng_engine(void* queue_arg)
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
 
     if (http_code == 200 || http_code == 403) {
-      output("FOUND %s (response code %d)\n",trim(url),http_code);
-      outputToFile("%s (HTTP code %d)\n",trim(url),http_code);
+      output("FOUND %s (response code %d)\n",(url),http_code);
+      outputToFile("%s (HTTP code %d)\n",(url),http_code);
     }  
-    if(conf0.verbose) output("[%d] %s\n", http_code, trim(url));
+    if(conf0.verbose) output("[%d] %s\n", http_code, (url));
     free(url);
   }		
   curl_easy_cleanup(curl);
@@ -307,9 +311,11 @@ int main(int argc, char **argv)
   init_workloads(db_queue);
   init_workers(db_queue);
 	
+	/*
   for(;;) {
 	  sleep(.1);
 	  if (! db_queue->head) break;
   }
+  */
 	
 }

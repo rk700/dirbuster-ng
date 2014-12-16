@@ -1,6 +1,6 @@
 #include "utils.h"
 
-
+/*
 int setZero(char * str) {
 
    int i = 0;
@@ -22,7 +22,7 @@ int setZeroN(char * str,int len) {
 }
 
 
-
+*/
 
 stringlist explode(char *str, char separator) {
 
@@ -60,7 +60,7 @@ stringlist explode(char *str, char separator) {
     return res;
 }
 
-
+/*
 
 stringlist explode_ex(char *str, const char* delim) {
 
@@ -120,7 +120,7 @@ stringlist explode_ex(char *str, const char* delim) {
 
 
 
-
+*/
 
 
 
@@ -135,7 +135,7 @@ int strlfree(stringlist *str0) {
    free(str0->strlist);
 }
 
-
+/*
 int strippable(char c) {
 
    if (isspace(c) || c == '\r' || c == '\n') return 1;
@@ -261,3 +261,4 @@ int setnonblocking(int fd) {
    sock_status = fcntl(fd, F_SETFL, sock_status | O_NONBLOCK);
 
 }
+*/

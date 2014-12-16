@@ -6,6 +6,7 @@
 struct elt {
     char* entry;
     struct elt *next;
+    size_t entry_len;
 };
 
 struct queue {

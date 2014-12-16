@@ -9,9 +9,9 @@ struct queue *queue_add(struct queue *s, char* str)
 		"list_add");
 	return s;
     }
-
-	p->entry  = (char*) calloc (0,(strlen(str) +1) * sizeof(char));
-	strncpy(p->entry,str,strlen(str));
+    p->entry_len = strlen(str) + 1;
+	p->entry  = (char*) malloc (p->entry_len * sizeof(char));
+	strcpy(p->entry,str);//,strlen(str));
     p->next = NULL;
 
     if (NULL == s) {
@@ -38,7 +38,7 @@ struct queue *queue_rem(struct queue *s)
 {
     struct elt *h = NULL;
     struct elt *p = NULL;
-
+/*
     if (NULL == s) {
 	printf("List is empty\n");
 	return s;
@@ -49,7 +49,7 @@ struct queue *queue_rem(struct queue *s)
 	printf("There is something seriously wrong with your list\n");
 	printf("One of the head/tail is empty while other is not \n");
 	return s;
-    }
+    }*/
 
     h = s->head;
     p = h->next;
