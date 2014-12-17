@@ -18,5 +18,6 @@ typedef struct dbng_config {
   FILE* output_file;	
   stringlist ext;
   uint8_t verbose;
+  uint8_t followLocation;
 
 } dbng_config;

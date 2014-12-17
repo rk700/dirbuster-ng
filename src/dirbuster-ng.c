@@ -9,7 +9,7 @@ int parse_arguments(int argc, char **argv)
     int index;
     int c;
     int opterr = 0;	
-    while ((c = getopt(argc, argv, "hqvVw:d:e:n:t:X:K:u:U:W:")) != -1) {
+    while ((c = getopt(argc, argv, "hqvVfw:d:e:n:t:X:K:u:U:W:")) != -1) {
 		switch (c) {
 			case 'v':
 		  		return;
@@ -30,6 +30,9 @@ int parse_arguments(int argc, char **argv)
 			  break;
 			case 'V':
 			  conf0.verbose = 1;
+			  break;
+			case 'f':
+			  conf0.followLocation = 1;
 			  break;
 			case 't':
 			  conf0.timeout = atoi(optarg);
@@ -107,7 +110,8 @@ void* dbng_engine(void* queue_arg)
   curl = curl_easy_init();
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
   curl_easy_setopt(curl, CURLOPT_TIMEOUT,conf0.timeout);
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION,1);
+  if(conf0.followLocation)
+      curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION,1);
 
   if (conf0.proxy != NULL) {
     curl_easy_setopt(curl, CURLOPT_PROXY,conf0.proxy);
@@ -218,6 +222,7 @@ int init_config(dbng_config* conf0) {
   conf0->output_file = NULL;
   conf0->ext = (stringlist){NULL, 0};
   conf0->verbose = 0;
+  conf0->followLocation = 0;
 }
 
 int init_workers(struct queue* db_queue) {
@@ -282,6 +287,7 @@ Options:\n -w <nb_threads>\tDefines the number of threads to use to make the att
  -q\t Enable quiet mode (relevent only with the -W flag)\n\
  -h\t Prints this help then exits\n\
  -V \t Verbose. Print each request url and response code\n\
+ -f \t Follow redirect.\n\
  -v\t Prints the program version then exits\n");
 
   exit(0);
