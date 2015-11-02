@@ -2,14 +2,14 @@
 
 /*we split the argument parsing from main()
 because it's more clear */
-int parse_arguments(int argc, char **argv)
+void parse_arguments(int argc, char **argv)
 {
     extern dbng_config conf0;
     char *cvalue = NULL;
     int index;
     int c;
     int opterr = 0;	
-    while ((c = getopt(argc, argv, "hqvVw:d:e:n:t:X:K:u:U:W:")) != -1) {
+    while ((c = getopt(argc, argv, "hfqvVw:d:e:n:t:X:K:u:U:W:")) != -1) {
 		switch (c) {
 			case 'v':
 		  		return;
@@ -22,6 +22,9 @@ int parse_arguments(int argc, char **argv)
 			case 'h':
 				usage();
 		    	break;
+            case 'f':
+                conf0.followRedirect = 1;
+                break;
 		    case 'd':
 		      conf0.dict = optarg;
 			  break;
@@ -107,7 +110,7 @@ void* dbng_engine(void* queue_arg)
   curl = curl_easy_init();
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
   curl_easy_setopt(curl, CURLOPT_TIMEOUT,conf0.timeout);
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION,1);
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION,conf0.followRedirect);
 
   if (conf0.proxy != NULL) {
     curl_easy_setopt(curl, CURLOPT_PROXY,conf0.proxy);
@@ -214,6 +217,7 @@ int init_config(dbng_config* conf0) {
   conf0->output_file = NULL;
   conf0->ext = (stringlist){NULL, 0};
   conf0->verbose = 0;
+  conf0->followRedirect = 0;
 }
 
 int init_workers(struct queue* db_queue) {
@@ -262,7 +266,7 @@ Options:\n -w <nb_threads>\tDefines the number of threads to use to make the att
  -d <dict>\tLoads an external textfile to use as a dictionary\n\
  -e <ext>\tSpecify a list of extensions that would be appended to each word in the dict; seperated by comma\n\
  -t <seconds>\tSets the timeout in seconds for each http query\n\
- -W <file>\t Saves the program's result inside a file\n\
+ -W <file>\tSaves the program's result inside a file\n\
  -u <ua>\tuse a predefined user-agent, corresponding to the most used browsers/crawlers:\n\
  \t\tff: Mozilla Firefox\n\
  \t\tchr: Google Chrome\n\
@@ -275,10 +279,11 @@ Options:\n -w <nb_threads>\tDefines the number of threads to use to make the att
  \t\tgbot: Google Bot\n\
  \t\tbing: Microsoft Bing Crawler\n\
  \t\tbspid: Baidu Spider\n\
- -q\t Enable quiet mode (relevent only with the -W flag)\n\
- -h\t Prints this help then exits\n\
- -V \t Verbose. Print each request url and response code\n\
- -v\t Prints the program version then exits\n");
+ -q\tEnable quiet mode (relevent only with the -W flag)\n\
+ -h\tPrints this help then exits\n\
+ -V \tVerbose. Print each request url and response code\n\
+ -v\tPrints the program version then exits\n\
+ -f\tFollow redirects(302 or 301)\n");
 
   exit(0);
 }
