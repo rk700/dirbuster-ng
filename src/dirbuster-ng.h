@@ -20,5 +20,7 @@
 
 dbng_config conf0;
 
+void usage();
+
 #endif
 

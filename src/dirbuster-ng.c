@@ -65,25 +65,25 @@ void parse_arguments(int argc, char **argv)
     }
 }
 
-int output(char* fmt,...) 
+void output(char* fmt,...) 
 {
   va_list args;
   extern dbng_config conf0;
-  if (conf0.quiet) return -1;	
+  if (conf0.quiet)
+    return;	
   va_start(args,fmt);
   vprintf(fmt,args);
   va_end(args);
 }
 
-int outputToFile(char* fmt,...) {
-
+void outputToFile(char* fmt,...) {
   va_list args;
   extern dbng_config conf0;
-  if (!conf0.output_file) return -1;
+  if (!conf0.output_file) 
+    return;
   va_start(args,fmt);
   vfprintf(conf0.output_file,fmt,args);
   va_end(args);
-
 }
 
 
@@ -99,12 +99,8 @@ void* dbng_engine(void* queue_arg)
 {
   struct queue* db_queue = (struct queue*) queue_arg;
   extern dbng_config conf0;
-  char * url;
   CURL *curl;
   CURLcode response;
-  char *wl;
-  int final_url_len = 0;
-  int wl_len = 0;
   long http_code;
 
   curl = curl_easy_init();
@@ -129,45 +125,63 @@ void* dbng_engine(void* queue_arg)
     curl_easy_setopt(curl, CURLOPT_HTTPAUTH,CURLAUTH_BASIC|CURLAUTH_DIGEST);
 	curl_easy_setopt(curl, CURLOPT_USERPWD,conf0.http_auth);
   }
+
+  char buffer[256];
+  char url[512];
 	
-  while(db_queue->head) {
-	  
+  // while(db_queue->head) {
+	 
+   // fprintf(stderr, "%s\n", "start loop");
+loop: 
 	pthread_mutex_lock(db_queue->mutex);
-	wl_len = strlen(db_queue->head->entry)+1;
-    wl = (char*) malloc (wl_len * sizeof(char));
-	setZeroN(wl,wl_len);
-	strncpy(wl,db_queue->head->entry,strlen(db_queue->head->entry));
-    queue_rem(db_queue);
+  struct elt *head = db_queue->head;
+  // fprintf(stderr, "head is %p\n", head);
+  if(head == NULL) {
+    pthread_mutex_unlock(db_queue->mutex);
+    // fprintf(stderr, "%s\n", "finishing");
+    return NULL;
+  }
+	// wl_len = strlen(db_queue->head->entry)+1;
+    // wl = (char*) malloc (wl_len * sizeof(char));
+	// setZeroN(wl,wl_len);
+	strncpy(buffer, head->entry, sizeof(buffer));
+  // fprintf(stderr, "head entry is %s\n", head->entry);
+  queue_rem(db_queue);
 	pthread_mutex_unlock(db_queue->mutex);
 
     //we construct the url given host and wl
-	final_url_len = strlen(conf0.host) + strlen(wl) +2;
-	url = (char*) malloc(final_url_len * sizeof(char) );
-	setZeroN(url,final_url_len);
-	strncpy(url,conf0.host,strlen(conf0.host));
-	strncat(url,"/",1 * sizeof(char));  
-	strncat(url,wl,strlen(wl));
-    free(wl);
+	// final_url_len = strlen(conf0.host) + strlen(wl) +2;
+	// url = (char*) malloc(final_url_len * sizeof(char) );
+	// setZeroN(url,final_url_len);
+	strncpy(url, conf0.host, sizeof(url));
+  // fprintf(stderr, "url is %s\n", url);
+	strncat(url, "/", sizeof(url)-strlen(url)-1);  
+  // fprintf(stderr, "url is %s\n", url);
+	strncat(url, buffer, strlen(url));
+  // fprintf(stderr, "buffer is %s, url is %s\n", buffer, url);
+  // goto loop;
+    // free(wl);
 	  
-    curl_easy_setopt(curl, CURLOPT_URL,url);
-    response = curl_easy_perform(curl);
-    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+  curl_easy_setopt(curl, CURLOPT_URL,url);
+  response = curl_easy_perform(curl);
+  curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
 
-    if (http_code == 200 || http_code == 403) {
-      output("FOUND %s (response code %d)\n",trim(url),http_code);
-      outputToFile("%s (HTTP code %d)\n",trim(url),http_code);
-    }  
-    if(conf0.verbose) output("[%d] %s\n", http_code, trim(url));
-    free(url);
-  }		
+  if (http_code == 200 || http_code == 403) {
+    output("FOUND %s (response code %d)\n",trim(url),http_code);
+    outputToFile("%s (HTTP code %d)\n",trim(url),http_code);
+  }  
+  if(conf0.verbose) output("[%d] %s\n", http_code, trim(url));
+    // free(url);
+	goto loop;
   curl_easy_cleanup(curl);
 }
 
-int load_dict(struct queue* db_queue) {
+void load_dict(struct queue* db_queue) {
 	
   extern dbng_config conf0;	
   FILE* dict_fh;
-  char * buffer = (char*) malloc(4096 * sizeof(char));
+  char buffer[256];
+  // char * buffer = (char*) malloc(4096 * sizeof(char));
   dict_fh = fopen(conf0.dict,"r");
 
   if (!dict_fh) {
@@ -175,36 +189,40 @@ int load_dict(struct queue* db_queue) {
 	exit(1);
   }
 	
-  if(conf0.ext.nb_strings) {
-    int i;
-    while (!feof(dict_fh)) {
-      if(!fgets(buffer,4096*sizeof(char),dict_fh)) break;
-      size_t entry_len = strlen(buffer);
-      //fgets would also store the trailing newline
-      if(buffer[entry_len-1]=='\n') entry_len-=1;
-      for(i=0; i<conf0.ext.nb_strings; ++i) {
-        strncpy(buffer+entry_len, conf0.ext.strlist[i], 4096-entry_len);
-        buffer[4096-1] = '\0';
+
+  int i;
+  while (!feof(dict_fh)) {
+    if(!fgets(buffer,sizeof(buffer),dict_fh)) {
+      break;
+    }
+    size_t entry_len = strlen(buffer);
+    //fgets would also store the trailing newline
+    if(buffer[entry_len-1]=='\n') {
+      buffer[entry_len-1] = '\0';
+      entry_len-=1;
+    }
+    if(conf0.ext.nb_strings == 0) {
+      queue_add(db_queue, buffer);
+      continue;
+    }
+    for(i=0; i<conf0.ext.nb_strings; ++i) {
+      if(sizeof(buffer) - entry_len > strlen(conf0.ext.strlist[i])) {
+        strncpy(buffer+entry_len, conf0.ext.strlist[i], sizeof(buffer)-entry_len);
+        // buffer[4096-1] = '\0';
+        // fprintf(stderr, "adding buffer %s\n", buffer);
         queue_add(db_queue,buffer);
+      }
+      else {
+        fprintf(stderr, "WARNNING: not enough space for entry %s\n", buffer);
       }
     }
   }
-  else {
-    while (!feof(dict_fh)) {
-    fgets(buffer,4096*sizeof(char),dict_fh);
-	//handling of recursion ?? 
-    //( dup the queue to keep an initial copy, save found dirs)
-    queue_add(db_queue,buffer);
-    }
-  }
-
-  free(buffer);
-  strlfree(&(conf0.ext));
-	
+  // free(buffer);
+  // strlfree(&(conf0.ext));
 }
 
 
-int init_config(dbng_config* conf0) {
+void init_config(dbng_config* conf0) {
   conf0->quiet = 0;
   conf0->nb_workers = DEFAULT_WORKERS;
   conf0->timeout = DEFAULT_TIMEOUT;
@@ -220,7 +238,7 @@ int init_config(dbng_config* conf0) {
   conf0->followRedirect = 0;
 }
 
-int init_workers(struct queue* db_queue) {
+void init_workers(struct queue* db_queue) {
 	
   extern dbng_config conf0;
   int i;
@@ -236,7 +254,7 @@ int init_workers(struct queue* db_queue) {
   }
 }
 
-int init_workloads(struct queue* db_queue) {
+void init_workloads(struct queue* db_queue) {
 	
 	extern dbng_config conf0;
 	extern const char* def_dict[];
@@ -255,7 +273,7 @@ int init_workloads(struct queue* db_queue) {
 	}
 }
 
-int usage() {
+void usage() {
 
   printf("Usage: dirbuster-ng [options...] <url>\n\
 Options:\n -w <nb_threads>\tDefines the number of threads to use to make the attack\n\
@@ -264,7 +282,7 @@ Options:\n -w <nb_threads>\tDefines the number of threads to use to make the att
  -X <proxy_server:port>\tUse an HTTP proxy server to perform the queries\n\
  -K <username:password>\tSets an username/password couple for proxy auth\n\
  -d <dict>\tLoads an external textfile to use as a dictionary\n\
- -e <ext>\tSpecify a list of extensions that would be appended to each word in the dict; seperated by comma\n\
+ -e <ext>\tSpecify a list of extensions that would be appended to each word in the dict; seperated by comma; ommit this option would lead to dict entries unchanged\n\
  -t <seconds>\tSets the timeout in seconds for each http query\n\
  -W <file>\tSaves the program's result inside a file\n\
  -u <ua>\tuse a predefined user-agent, corresponding to the most used browsers/crawlers:\n\
@@ -288,7 +306,7 @@ Options:\n -w <nb_threads>\tDefines the number of threads to use to make the att
   exit(0);
 }
 
-int version() {
+void version() {
   printf("{Dirbuster NG 0.1} (c)2012 WintermeW\n");
 }
 
@@ -313,7 +331,6 @@ int main(int argc, char **argv)
   init_workers(db_queue);
 	
   for(;;) {
-	  sleep(.1);
 	  if (! db_queue->head) break;
   }
 	

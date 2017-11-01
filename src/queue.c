@@ -2,7 +2,12 @@
 
 struct queue *queue_add(struct queue *s, char* str)
 {
-    struct elt *p = malloc(1 * sizeof(*p));
+    if (NULL == s) {
+        printf("Queue not initialized\n");
+        return s;
+    }
+
+    struct elt *p = malloc(1 * sizeof(struct elt));
 
     if (NULL == p) {
 	fprintf(stderr, "IN %s, %s: malloc() failed\n", __FILE__,
@@ -10,25 +15,24 @@ struct queue *queue_add(struct queue *s, char* str)
 	return s;
     }
 
-	p->entry  = (char*) calloc (0,(strlen(str) +1) * sizeof(char));
-	strncpy(p->entry,str,strlen(str));
+	// p->entry  = (char*) calloc (0,(strlen(str) +1) * sizeof(char));
+    p->entry = (char *)malloc(strlen(str)+8);
+    if (p->entry == NULL) {
+        fprintf(stderr, "malloc failed when adding entry %s\n", str);
+        free(p);
+        return s;
+    }
+	strcpy(p->entry, str);
+    // fprintf(stderr, "entry %s added\n", p->entry);
     p->next = NULL;
 
-    if (NULL == s) {
-	printf("Queue not initialized\n");
-	free(p);
-	return s;
-    } else if (NULL == s->head && NULL == s->tail) {
-	s->head = s->tail = p;
-	return s;
-    } else if (NULL == s->head || NULL == s->tail) {
-	fprintf(stderr,
-		"There is something wrong with your assignment of head/tail\n");
-	free(p);
-	return NULL;
-    } else {
-	  s->tail->next = p;
-	  s->tail = p;
+    if (NULL == s->head && NULL == s->tail) {
+	   s->head = s->tail = p;
+	   return s;
+    } 
+    else {
+	   s->tail->next = p;
+	   s->tail = p;
     }
 	
     return s;
