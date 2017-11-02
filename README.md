@@ -45,6 +45,7 @@ Usage: dirbuster-ng [options...] <url>
     -V  Verbose. Print each request url and response code
     -v  Prints the program version then exits
     -f  Follow redirects(302 or 301)
+```
 
 ## Example
 
