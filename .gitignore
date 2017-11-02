@@ -3,4 +3,5 @@ CMakeFiles
 cmake_install.cmake
 dirbuster-ng
 Makefile
-
+*.swp
+install_manifest.txt

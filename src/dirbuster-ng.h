@@ -15,8 +15,8 @@
 #include "uagents.h"
 #include <curl/curl.h>
 
-#define DEFAULT_WORKERS 8
-#define DEFAULT_TIMEOUT 2
+#define DEFAULT_WORKERS 4
+#define DEFAULT_TIMEOUT 10
 
 dbng_config conf0;
 
