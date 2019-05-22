@@ -121,6 +121,8 @@ void* dbng_engine(void* queue_arg) {
         curl_easy_setopt(curl, CURLOPT_USERPWD, conf0.http_auth);
     }
 
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+
     char buffer[256];
     buffer[sizeof(buffer)-1] = '\0';
     char url[512];
